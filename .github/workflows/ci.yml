@@ -8,7 +8,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: rogelioRuiz/dust-core-kotlin
-          path: ../dust-core-kotlin
+          path: dust-core-kotlin
+      - run: ln -s $GITHUB_WORKSPACE/dust-core-kotlin ../dust-core-kotlin
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
