@@ -2,10 +2,12 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.0'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21'
+        classpath 'net.thebugmc.gradle.sonatype-central-portal-publisher:net.thebugmc.gradle.sonatype-central-portal-publisher.gradle.plugin:1.2.4'
     }
 }
 
@@ -15,10 +17,7 @@ ext {
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-
-plugins {
-    id 'net.thebugmc.gradle.sonatype-central-portal-publisher' version '1.2.4'
-}
+apply plugin: 'net.thebugmc.gradle.sonatype-central-portal-publisher'
 
 def versionFile = file('VERSION')
 version = versionFile.exists() ? versionFile.text.trim() : '0.1.0'
