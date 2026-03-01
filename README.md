@@ -1,3 +1,12 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/dust_white.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/dust_black.png">
+    <img alt="dust" src="assets/dust_black.png" width="200">
+  </picture>
+</p>
+
+<p align="center"><strong>Device Unified Serving Toolkit</strong></p>
 
 # dust-llm-kotlin
 
