@@ -2,6 +2,8 @@
   <img alt="dust" src="assets/dust_banner.png" width="400">
 </p>
 
+<p align="center"><strong>Device Unified Serving Toolkit</strong></p>
+
 # dust-llm-kotlin
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
