@@ -1,0 +1,127 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.21'
+    }
+}
+
+ext {
+    junitVersion = project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.13.2'
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+def versionFile = file('VERSION')
+version = versionFile.exists() ? versionFile.text.trim() : '0.1.0'
+group = 'io.t6x.dust'
+
+android {
+    namespace 'io.t6x.dust.llm'
+    compileSdk 36
+    defaultConfig {
+        minSdkVersion 26
+        targetSdkVersion 36
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+        }
+    }
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+        }
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+dependencies {
+    implementation project(':dust-core-kotlin')
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0'
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+                groupId = project.group
+                artifactId = 'dust-llm'
+                version = project.version
+
+                pom {
+                    name = 'dust-llm-kotlin'
+                    description = 'Android GGUF/llama.cpp inference and chat runtime for Dust'
+                    url = 'https://github.com/rogelioRuiz/dust-llm-kotlin'
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 't6x'
+                            name = 'T6X'
+                            email = 'dev@t6x.io'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:git://github.com/rogelioRuiz/dust-llm-kotlin.git'
+                        developerConnection = 'scm:git:ssh://github.com/rogelioRuiz/dust-llm-kotlin.git'
+                        url = 'https://github.com/rogelioRuiz/dust-llm-kotlin'
+                    }
+                }
+            }
+        }
+
+        repositories {
+            maven {
+                name = 'sonatype'
+                url = version.toString().endsWith('SNAPSHOT')
+                    ? 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                    : 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+                credentials {
+                    username = findProperty('ossrhUsername') ?: ''
+                    password = findProperty('ossrhPassword') ?: ''
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications
+    }
+}

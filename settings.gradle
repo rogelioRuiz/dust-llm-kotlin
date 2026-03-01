@@ -1,0 +1,16 @@
+pluginManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    plugins {
+        id 'com.android.library' version '8.13.0'
+        id 'org.jetbrains.kotlin.android' version '2.1.21'
+    }
+}
+
+rootProject.name = 'dust-llm-kotlin'
+
+include ':dust-core-kotlin'
+project(':dust-core-kotlin').projectDir = file('../dust-core-kotlin')

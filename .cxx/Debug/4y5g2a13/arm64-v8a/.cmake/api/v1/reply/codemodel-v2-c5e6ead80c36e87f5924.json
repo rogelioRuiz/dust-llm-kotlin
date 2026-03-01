@@ -1,0 +1,220 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.6.0"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						4,
+						5
+					]
+				},
+				{
+					"build" : "llama.cpp",
+					"childIndexes" : 
+					[
+						2,
+						5
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-llama.cpp-Debug-848c2e39460ee2d452ab.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "/home/rruiz/dev/dust/dust-llm-swift/native/llama.cpp"
+				},
+				{
+					"build" : "llama.cpp/ggml",
+					"childIndexes" : 
+					[
+						3
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-llama.cpp.ggml-Debug-a9ca7c6c2b07bb42de2d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 2,
+					"source" : "/home/rruiz/dev/dust/dust-llm-swift/native/llama.cpp/ggml"
+				},
+				{
+					"build" : "llama.cpp/ggml/src",
+					"childIndexes" : 
+					[
+						4
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-llama.cpp.ggml.src-Debug-61670907fa6fa9457a7a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 2,
+					"projectIndex" : 2,
+					"source" : "/home/rruiz/dev/dust/dust-llm-swift/native/llama.cpp/ggml/src",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				},
+				{
+					"build" : "llama.cpp/ggml/src/ggml-cpu",
+					"jsonFile" : "directory-llama.cpp.ggml.src.ggml-cpu-Debug-85569c2e6c5aaede63fd.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "/home/rruiz/dev/dust/dust-llm-swift/native/llama.cpp/ggml/src/ggml-cpu"
+				},
+				{
+					"build" : "llama.cpp/src",
+					"jsonFile" : "directory-llama.cpp.src-Debug-9cdea7a5af479625d5f2.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "/home/rruiz/dev/dust/dust-llm-swift/native/llama.cpp/src",
+					"targetIndexes" : 
+					[
+						3
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "dust_llm_jni",
+					"targetIndexes" : 
+					[
+						4,
+						5
+					]
+				},
+				{
+					"childIndexes" : 
+					[
+						2
+					],
+					"directoryIndexes" : 
+					[
+						1,
+						5
+					],
+					"name" : "llama.cpp",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2,
+						3,
+						4
+					],
+					"name" : "ggml",
+					"parentIndex" : 1,
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 3,
+					"id" : "ggml::@94de48a0d5830e0c5d2f",
+					"jsonFile" : "target-ggml-Debug-e94a9c37ae2f7c1d84b4.json",
+					"name" : "ggml",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "ggml-base::@94de48a0d5830e0c5d2f",
+					"jsonFile" : "target-ggml-base-Debug-950bb6f7857a0581dc5b.json",
+					"name" : "ggml-base",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "ggml-cpu::@94de48a0d5830e0c5d2f",
+					"jsonFile" : "target-ggml-cpu-Debug-960a1c4c928f6401df9a.json",
+					"name" : "ggml-cpu",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "llama::@fb8c1886b26de7beabc1",
+					"jsonFile" : "target-llama-Debug-276940eb00222a284538.json",
+					"name" : "llama",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "llama_jni::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-llama_jni-Debug-f628362d5d51b93f1132.json",
+					"name" : "llama_jni",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "llava::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-llava-Debug-f30b76c91bbbe5cec5bb.json",
+					"name" : "llava",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/rruiz/dev/dust/dust-llm-kotlin/.cxx/Debug/4y5g2a13/arm64-v8a",
+		"source" : "/home/rruiz/dev/dust/dust-llm-kotlin/src/main/cpp"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}
