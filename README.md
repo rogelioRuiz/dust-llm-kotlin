@@ -2,13 +2,46 @@
   <img alt="dust" src="assets/dust_banner.png" width="400">
 </p>
 
-<p align="center"><strong>Device Unified Serving Toolkit</strong></p>
+<p align="center">
+  <strong>Device Unified Serving Toolkit</strong><br>
+  <a href="https://github.com/rogelioRuiz/dust">dust ecosystem</a> · v0.1.0 · Apache 2.0
+</p>
+
+<p align="center">
+  <a href="https://github.com/rogelioRuiz/dust/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
+  <img alt="Version" src="https://img.shields.io/badge/version-0.1.0-informational">
+  <img alt="Maven" src="https://img.shields.io/badge/Maven-io.t6x.dust%3Adust--llm-blue">
+  <a href="https://developer.android.com/studio/releases/platforms"><img alt="API" src="https://img.shields.io/badge/API-26+-green.svg"></a>
+  <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.1-purple.svg"></a>
+  <img alt="GGUF" src="https://img.shields.io/badge/GGUF-llama.cpp-blueviolet">
+</p>
+
+---
+
+<p align="center">
+<strong>dust ecosystem</strong> —
+<a href="../capacitor-core/README.md">capacitor-core</a> ·
+<a href="../capacitor-llm/README.md">capacitor-llm</a> ·
+<a href="../capacitor-onnx/README.md">capacitor-onnx</a> ·
+<a href="../capacitor-serve/README.md">capacitor-serve</a> ·
+<a href="../capacitor-embeddings/README.md">capacitor-embeddings</a>
+<br>
+<a href="../dust-core-kotlin/README.md">dust-core-kotlin</a> ·
+<strong>dust-llm-kotlin</strong> ·
+<a href="../dust-onnx-kotlin/README.md">dust-onnx-kotlin</a> ·
+<a href="../dust-embeddings-kotlin/README.md">dust-embeddings-kotlin</a> ·
+<a href="../dust-serve-kotlin/README.md">dust-serve-kotlin</a>
+<br>
+<a href="../dust-core-swift/README.md">dust-core-swift</a> ·
+<a href="../dust-llm-swift/README.md">dust-llm-swift</a> ·
+<a href="../dust-onnx-swift/README.md">dust-onnx-swift</a> ·
+<a href="../dust-embeddings-swift/README.md">dust-embeddings-swift</a> ·
+<a href="../dust-serve-swift/README.md">dust-serve-swift</a>
+</p>
+
+---
 
 # dust-llm-kotlin
-
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-26+-green.svg)](https://developer.android.com/studio/releases/platforms)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.1-purple.svg)](https://kotlinlang.org)
 
 Android GGUF/llama.cpp inference and chat runtime with JNI bindings.
 
@@ -112,4 +145,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding conventions
 
 ## License
 
-Copyright 2026 T6X. Licensed under the [Apache License 2.0](LICENSE).
+Copyright 2026 Rogelio Ruiz Perez. Licensed under the [Apache License 2.0](LICENSE).
