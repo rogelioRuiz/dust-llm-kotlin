@@ -72,7 +72,8 @@ open class LlamaContextWrapper(
         val raw = LlamaJNI.nativeGenerateWithVision(
             handle = handle,
             promptTokens = promptTokens,
-            embedHandle = imageEmbedding.nativeHandle,
+            mtmdCtxHandle = imageEmbedding.mtmdCtxHandle,
+            chunksHandle = imageEmbedding.chunksHandle,
             maxTokens = maxTokens,
             temperature = sampler.temperature,
             topK = sampler.topK,
@@ -98,7 +99,8 @@ open class LlamaContextWrapper(
         val rawStopReason = LlamaJNI.nativeGenerateStreamingWithVision(
             handle = handle,
             promptTokens = promptTokens,
-            embedHandle = imageEmbedding.nativeHandle,
+            mtmdCtxHandle = imageEmbedding.mtmdCtxHandle,
+            chunksHandle = imageEmbedding.chunksHandle,
             maxTokens = maxTokens,
             temperature = sampler.temperature,
             topK = sampler.topK,

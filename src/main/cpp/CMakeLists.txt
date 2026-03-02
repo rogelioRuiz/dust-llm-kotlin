@@ -16,34 +16,39 @@ set(GGML_METAL OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${LLAMA_CPP_DIR} ${CMAKE_CURRENT_BINARY_DIR}/llama.cpp)
 
+file(GLOB MTMD_MODEL_SOURCES ${LLAMA_CPP_DIR}/tools/mtmd/models/*.cpp)
+
 add_library(
-    llava
+    mtmd
     OBJECT
-    ${LLAMA_CPP_DIR}/examples/llava/clip.cpp
-    ${LLAMA_CPP_DIR}/examples/llava/llava.cpp
+    ${LLAMA_CPP_DIR}/tools/mtmd/clip.cpp
+    ${LLAMA_CPP_DIR}/tools/mtmd/mtmd.cpp
+    ${LLAMA_CPP_DIR}/tools/mtmd/mtmd-helper.cpp
+    ${LLAMA_CPP_DIR}/tools/mtmd/mtmd-audio.cpp
+    ${MTMD_MODEL_SOURCES}
 )
 
 target_include_directories(
-    llava
+    mtmd
     PUBLIC
-    ${LLAMA_CPP_DIR}/examples/llava
+    ${LLAMA_CPP_DIR}/tools/mtmd
     ${LLAMA_CPP_DIR}/include
     ${LLAMA_CPP_DIR}/ggml/include
     ${LLAMA_CPP_DIR}/ggml/src
-    ${LLAMA_CPP_DIR}/common
+    ${LLAMA_CPP_DIR}/vendor
 )
 
 target_compile_options(
-    llava
+    mtmd
     PRIVATE
     -Wno-cast-qual
 )
 
 if(TARGET ggml)
-    target_link_libraries(llava PRIVATE ggml)
+    target_link_libraries(mtmd PRIVATE ggml)
 endif()
 
-target_link_libraries(llava PRIVATE llama)
+target_link_libraries(mtmd PRIVATE llama)
 
 add_library(
     llama_jni
@@ -55,14 +60,14 @@ target_include_directories(
     llama_jni
     PRIVATE
     ${LLAMA_CPP_DIR}/include
-    ${LLAMA_CPP_DIR}/examples/llava
+    ${LLAMA_CPP_DIR}/tools/mtmd
 )
 
 target_link_libraries(
     llama_jni
     PRIVATE
     llama
-    $<TARGET_OBJECTS:llava>
+    $<TARGET_OBJECTS:mtmd>
     log
 )
 

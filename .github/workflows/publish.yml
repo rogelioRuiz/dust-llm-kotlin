@@ -1,0 +1,47 @@
+name: Publish to Maven Central
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout sibling repos
+        run: |
+          cd ..
+          git clone --depth 1 https://github.com/rogelioRuiz/dust-llm-swift.git
+          git clone --depth 1 https://github.com/rogelioRuiz/dust-core-kotlin.git
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Android SDK + NDK
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;36.0.0" \
+            "ndk;27.0.12077973" 2>&1 | tail -10
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > "${{ runner.temp }}/secring.gpg"
+
+      - name: Publish to Maven Central
+        run: ./gradlew publishToCentralPortal --no-daemon --stacktrace
+        env:
+          ORG_GRADLE_PROJECT_centralPortal.username: ${{ secrets.MAVEN_USERNAME }}
+          ORG_GRADLE_PROJECT_centralPortal.password: ${{ secrets.MAVEN_PASSWORD }}
+          ORG_GRADLE_PROJECT_signing.keyId: ${{ secrets.GPG_KEY_ID }}
+          ORG_GRADLE_PROJECT_signing.password: ${{ secrets.GPG_PASSPHRASE }}
+          ORG_GRADLE_PROJECT_signing.secretKeyRingFile: ${{ runner.temp }}/secring.gpg

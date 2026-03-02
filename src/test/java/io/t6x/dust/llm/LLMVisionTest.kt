@@ -63,18 +63,22 @@ class LLMVisionTest {
     }
 
     @Test
-    fun l6T4RealClipEncodeReturnsEmbeddingWhenEnvIsSet() {
+    fun l6T4RealMtmdEncodeReturnsEmbeddingWhenEnvIsSet() {
         val mmprojPath = System.getenv("LLAVA_MMPROJ_PATH")
-        assumeTrue("LLAVA_MMPROJ_PATH is not set", !mmprojPath.isNullOrEmpty())
+        val modelPath = System.getenv("LLAVA_MODEL_PATH")
+        assumeTrue("LLAVA_MMPROJ_PATH and LLAVA_MODEL_PATH must both be set",
+            !mmprojPath.isNullOrEmpty() && !modelPath.isNullOrEmpty())
 
         try {
-            val encoder = VisionEncoder(mmprojPath!!)
+            val context = LlamaContextWrapper.load(modelPath!!, LLMConfig())
+            val encoder = VisionEncoder(mmprojPath!!, context.handle)
             try {
                 val embedding = encoder.encode(pngBytes())
                 assertTrue(embedding.tokenCount > 0)
                 encoder.freeEmbedding(embedding)
             } finally {
                 encoder.close()
+                context.close()
             }
         } catch (_: UnsatisfiedLinkError) {
             // Local JVM unit tests do not always load JNI artifacts; treat that as a skip.
@@ -103,8 +107,6 @@ class LLMVisionTest {
         session.generate("describe", 2, emptyList(), SamplerConfig(), pngBytes())
 
         assertEquals(listOf(11, 12, 13), engine.lastVisionPromptTokens)
-        assertEquals(3, visionEncoder.lastEvalNPastBefore)
-        assertEquals(35, visionEncoder.lastEvalNPastAfter)
     }
 
     @Test
@@ -127,13 +129,16 @@ class LLMVisionTest {
     @Test
     fun l6T8StreamGenerateWithImageReportsPromptTokens() {
         val mmprojPath = System.getenv("LLAVA_MMPROJ_PATH")
-        assumeTrue("LLAVA_MMPROJ_PATH is not set", !mmprojPath.isNullOrEmpty())
+        val modelPath = System.getenv("LLAVA_MODEL_PATH")
+        assumeTrue("LLAVA_MMPROJ_PATH and LLAVA_MODEL_PATH must both be set",
+            !mmprojPath.isNullOrEmpty() && !modelPath.isNullOrEmpty())
 
         try {
             val engine = VisionTestMockLlamaEngine().apply {
                 shouldCallVisionEval = false
             }
-            val encoder = VisionEncoder(mmprojPath!!)
+            val context = LlamaContextWrapper.load(modelPath!!, LLMConfig())
+            val encoder = VisionEncoder(mmprojPath!!, context.handle)
             val session = makeSession(engine, encoder)
             var observedPromptTokens = 0
             val tokenTexts = mutableListOf<String>()
@@ -222,10 +227,6 @@ private class VisionTestMockLlamaEngine : LlamaEngine {
         sampler: SamplerConfig,
     ): GenerateEngineResult {
         lastVisionPromptTokens = promptTokens.toList()
-        if (shouldCallVisionEval) {
-            val nPast = intArrayOf(promptTokens.size)
-            visionEncoder.evalImageEmbed(imageEmbedding, 1L, 512, nPast)
-        }
         return generateResult
     }
 
@@ -263,21 +264,13 @@ private class MockVisionEncoderEngine(
     override val imageTokenCount: Int = 576,
     private val encodeError: Throwable? = null,
 ) : VisionEncoderEngine {
-    var lastEvalNPastBefore: Int? = null
-    var lastEvalNPastAfter: Int? = null
 
     override fun encode(imageBytes: ByteArray): ImageEmbedding {
         if (encodeError != null) {
             throw encodeError
         }
 
-        return ImageEmbedding(nativeHandle = 1L, tokenCount = imageTokenCount)
-    }
-
-    override fun evalImageEmbed(embedding: ImageEmbedding, llamaHandle: Long, batchSize: Int, nPast: IntArray) {
-        lastEvalNPastBefore = nPast[0]
-        nPast[0] += embedding.tokenCount
-        lastEvalNPastAfter = nPast[0]
+        return ImageEmbedding(chunksHandle = 1L, mtmdCtxHandle = 1L, tokenCount = imageTokenCount)
     }
 
     override fun freeEmbedding(embedding: ImageEmbedding) = Unit

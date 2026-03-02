@@ -18,8 +18,8 @@ enum class MemoryPressureLevel {
 
 class LLMSessionManager(
     private val sessionFactory: ((path: String, modelId: String, config: LLMConfig, priority: SessionPriority) -> LlamaSession)? = null,
-    private val visionEncoderFactory: (mmprojPath: String) -> VisionEncoderEngine = { mmprojPath ->
-        VisionEncoder(mmprojPath)
+    private val visionEncoderFactory: (mmprojPath: String, llamaHandle: Long) -> VisionEncoderEngine = { mmprojPath, llamaHandle ->
+        VisionEncoder(mmprojPath, llamaHandle)
     },
 ) : ModelServer {
     private val lock = ReentrantLock()
@@ -248,7 +248,7 @@ class LLMSessionManager(
 
         val context = LlamaContextWrapper.load(path, config)
         val visionEncoder = if (context.metadata.hasVision) {
-            visionEncoderFactory(resolveMMProjPath(path, config))
+            visionEncoderFactory(resolveMMProjPath(path, config), context.handle)
         } else {
             null
         }

@@ -39,7 +39,8 @@ object LlamaJNI {
     external fun nativeGenerateWithVision(
         handle: Long,
         promptTokens: IntArray,
-        embedHandle: Long,
+        mtmdCtxHandle: Long,
+        chunksHandle: Long,
         maxTokens: Int,
         temperature: Float,
         topK: Int,
@@ -67,7 +68,8 @@ object LlamaJNI {
     external fun nativeGenerateStreamingWithVision(
         handle: Long,
         promptTokens: IntArray,
-        embedHandle: Long,
+        mtmdCtxHandle: Long,
+        chunksHandle: Long,
         maxTokens: Int,
         temperature: Float,
         topK: Int,
@@ -79,15 +81,13 @@ object LlamaJNI {
         callback: StreamingCallback,
     ): String?
 
-    external fun nativeClipLoad(path: String, verbosity: Int): Long
+    external fun nativeMtmdLoad(mmprojPath: String, llamaHandle: Long): Long
 
-    external fun nativeClipFree(handle: Long)
+    external fun nativeMtmdFree(handle: Long)
 
-    external fun nativeClipImageTokenCount(handle: Long): Int
+    external fun nativeMtmdEncodeImage(mtmdHandle: Long, imageBytes: ByteArray): Long
 
-    external fun nativeClipEncodeImage(clipHandle: Long, imageBytes: ByteArray, nThreads: Int): Long
+    external fun nativeMtmdGetTokenCount(chunksHandle: Long): Int
 
-    external fun nativeClipEvalImageEmbed(llamaHandle: Long, embedHandle: Long, batchSize: Int, nPast: IntArray): Boolean
-
-    external fun nativeClipFreeEmbed(embedHandle: Long)
+    external fun nativeMtmdFreeChunks(chunksHandle: Long)
 }

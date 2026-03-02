@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "llama.h"
-#include "clip.h"
-#include "llava.h"
+#include "mtmd.h"
+#include "mtmd-helper.h"
 
 namespace {
 
@@ -123,7 +123,8 @@ jobjectArray run_generation(
     JNIEnv * env,
     LlamaState * state,
     const std::vector<llama_token> & prompt,
-    const llava_image_embed * image_embed,
+    mtmd_context * mtmd_ctx,
+    mtmd_input_chunks * image_chunks,
     jint max_tokens,
     jfloat temperature,
     jint top_k,
@@ -134,14 +135,16 @@ jobjectArray run_generation(
     jint seed
 ) {
     const int32_t prompt_count = static_cast<int32_t>(prompt.size());
-    const int32_t image_token_count = image_embed == nullptr ? 0 : image_embed->n_image_pos;
+    const int32_t image_token_count = (image_chunks != nullptr)
+        ? static_cast<int32_t>(mtmd_helper_get_n_tokens(image_chunks))
+        : 0;
     const int32_t total_prompt_count = prompt_count + image_token_count;
     const int32_t context_size = static_cast<int32_t>(llama_n_ctx(state->context));
     if (total_prompt_count >= context_size) {
         return nullptr;
     }
 
-    llama_kv_cache_clear(state->context);
+    llama_memory_clear(llama_get_memory(state->context), true);
 
     llama_batch batch = llama_batch_init(std::max<int32_t>(prompt_count, 1), 0, 1);
     if (prompt_count > 0) {
@@ -154,15 +157,15 @@ jobjectArray run_generation(
     }
 
     int32_t next_pos = prompt_count;
-    if (image_embed != nullptr) {
-        if (!llava_eval_image_embed(
-                state->context,
-                image_embed,
-                static_cast<int>(llama_n_batch(state->context)),
-                &next_pos)) {
+    if (image_chunks != nullptr && mtmd_ctx != nullptr) {
+        llama_pos new_n_past = static_cast<llama_pos>(next_pos);
+        const int32_t batch_size = static_cast<int32_t>(llama_n_batch(state->context));
+        if (mtmd_helper_eval_chunks(mtmd_ctx, state->context, image_chunks,
+                                    new_n_past, 0, batch_size, true, &new_n_past) != 0) {
             llama_batch_free(batch);
             return nullptr;
         }
+        next_pos = static_cast<int32_t>(new_n_past);
     }
 
     llama_sampler * sampler = build_sampler(
@@ -214,7 +217,8 @@ jstring run_generation_streaming(
     JNIEnv * env,
     LlamaState * state,
     const std::vector<llama_token> & prompt,
-    const llava_image_embed * image_embed,
+    mtmd_context * mtmd_ctx,
+    mtmd_input_chunks * image_chunks,
     jint max_tokens,
     jfloat temperature,
     jint top_k,
@@ -230,14 +234,16 @@ jstring run_generation_streaming(
     }
 
     const int32_t prompt_count = static_cast<int32_t>(prompt.size());
-    const int32_t image_token_count = image_embed == nullptr ? 0 : image_embed->n_image_pos;
+    const int32_t image_token_count = (image_chunks != nullptr)
+        ? static_cast<int32_t>(mtmd_helper_get_n_tokens(image_chunks))
+        : 0;
     const int32_t total_prompt_count = prompt_count + image_token_count;
     const int32_t context_size = static_cast<int32_t>(llama_n_ctx(state->context));
     if (total_prompt_count >= context_size) {
         return nullptr;
     }
 
-    llama_kv_cache_clear(state->context);
+    llama_memory_clear(llama_get_memory(state->context), true);
 
     llama_batch batch = llama_batch_init(std::max<int32_t>(prompt_count, 1), 0, 1);
     if (prompt_count > 0) {
@@ -250,15 +256,15 @@ jstring run_generation_streaming(
     }
 
     int32_t next_pos = prompt_count;
-    if (image_embed != nullptr) {
-        if (!llava_eval_image_embed(
-                state->context,
-                image_embed,
-                static_cast<int>(llama_n_batch(state->context)),
-                &next_pos)) {
+    if (image_chunks != nullptr && mtmd_ctx != nullptr) {
+        llama_pos new_n_past = static_cast<llama_pos>(next_pos);
+        const int32_t batch_size = static_cast<int32_t>(llama_n_batch(state->context));
+        if (mtmd_helper_eval_chunks(mtmd_ctx, state->context, image_chunks,
+                                    new_n_past, 0, batch_size, true, &new_n_past) != 0) {
             llama_batch_free(batch);
             return nullptr;
         }
+        next_pos = static_cast<int32_t>(new_n_past);
     }
 
     llama_sampler * sampler = build_sampler(
@@ -568,6 +574,7 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerate(
         state,
         prompt,
         nullptr,
+        nullptr,
         max_tokens,
         temperature,
         top_k,
@@ -603,7 +610,7 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGetEmbedding(
         return nullptr;
     }
 
-    llama_kv_cache_clear(state->context);
+    llama_memory_clear(llama_get_memory(state->context), true);
 
     llama_batch batch = llama_batch_init(static_cast<int32_t>(prompt.size()), 0, 1);
     batch.n_tokens = 0;
@@ -678,7 +685,8 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateWithVision(
     jclass,
     jlong handle,
     jintArray prompt_tokens,
-    jlong embed_handle,
+    jlong mtmd_ctx_handle,
+    jlong chunks_handle,
     jint max_tokens,
     jfloat temperature,
     jint top_k,
@@ -688,7 +696,7 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateWithVision(
     jint repeat_last_n,
     jint seed
 ) {
-    if (handle == 0 || prompt_tokens == nullptr || embed_handle == 0) {
+    if (handle == 0 || prompt_tokens == nullptr || mtmd_ctx_handle == 0 || chunks_handle == 0) {
         return nullptr;
     }
 
@@ -702,12 +710,14 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateWithVision(
         return nullptr;
     }
 
-    auto * image_embed = reinterpret_cast<llava_image_embed *>(embed_handle);
+    auto * mtmd_ctx = reinterpret_cast<mtmd_context *>(mtmd_ctx_handle);
+    auto * chunks = reinterpret_cast<mtmd_input_chunks *>(chunks_handle);
     return run_generation(
         env,
         state,
         prompt,
-        image_embed,
+        mtmd_ctx,
+        chunks,
         max_tokens,
         temperature,
         top_k,
@@ -754,6 +764,7 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateStreaming(
         state,
         prompt,
         nullptr,
+        nullptr,
         max_tokens,
         temperature,
         top_k,
@@ -772,7 +783,8 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateStreamingWithVision(
     jclass,
     jlong handle,
     jintArray prompt_tokens,
-    jlong embed_handle,
+    jlong mtmd_ctx_handle,
+    jlong chunks_handle,
     jint max_tokens,
     jfloat temperature,
     jint top_k,
@@ -783,7 +795,7 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateStreamingWithVision(
     jint seed,
     jobject callback
 ) {
-    if (handle == 0 || prompt_tokens == nullptr || embed_handle == 0 || callback == nullptr) {
+    if (handle == 0 || prompt_tokens == nullptr || mtmd_ctx_handle == 0 || chunks_handle == 0 || callback == nullptr) {
         return nullptr;
     }
 
@@ -797,12 +809,14 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateStreamingWithVision(
         return nullptr;
     }
 
-    auto * image_embed = reinterpret_cast<llava_image_embed *>(embed_handle);
+    auto * mtmd_ctx = reinterpret_cast<mtmd_context *>(mtmd_ctx_handle);
+    auto * chunks = reinterpret_cast<mtmd_input_chunks *>(chunks_handle);
     return run_generation_streaming(
         env,
         state,
         prompt,
-        image_embed,
+        mtmd_ctx,
+        chunks,
         max_tokens,
         temperature,
         top_k,
@@ -816,30 +830,38 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeGenerateStreamingWithVision(
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipLoad(
+Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdLoad(
     JNIEnv * env,
     jclass,
-    jstring path,
-    jint verbosity
+    jstring mmproj_path,
+    jlong llama_handle
 ) {
-    if (path == nullptr) {
+    if (mmproj_path == nullptr || llama_handle == 0) {
         return 0;
     }
 
     ensure_backend_init();
 
-    const char * raw_path = env->GetStringUTFChars(path, nullptr);
+    auto * state = reinterpret_cast<LlamaState *>(llama_handle);
+    if (state->model == nullptr) {
+        return 0;
+    }
+
+    const char * raw_path = env->GetStringUTFChars(mmproj_path, nullptr);
     if (raw_path == nullptr) {
         return 0;
     }
 
-    clip_ctx * clip = clip_model_load(raw_path, verbosity);
-    env->ReleaseStringUTFChars(path, raw_path);
-    return reinterpret_cast<jlong>(clip);
+    mtmd_context_params params = mtmd_context_params_default();
+    params.use_gpu = true;
+
+    mtmd_context * ctx = mtmd_init_from_file(raw_path, state->model, params);
+    env->ReleaseStringUTFChars(mmproj_path, raw_path);
+    return reinterpret_cast<jlong>(ctx);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipFree(
+Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdFree(
     JNIEnv *,
     jclass,
     jlong handle
@@ -848,34 +870,21 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeClipFree(
         return;
     }
 
-    clip_free(reinterpret_cast<clip_ctx *>(handle));
-}
-
-extern "C" JNIEXPORT jint JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipImageTokenCount(
-    JNIEnv *,
-    jclass,
-    jlong handle
-) {
-    if (handle == 0) {
-        return 0;
-    }
-
-    const auto * clip = reinterpret_cast<clip_ctx *>(handle);
-    return static_cast<jint>(clip_n_patches(clip) + 1);
+    mtmd_free(reinterpret_cast<mtmd_context *>(handle));
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipEncodeImage(
+Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdEncodeImage(
     JNIEnv * env,
     jclass,
-    jlong clip_handle,
-    jbyteArray image_bytes,
-    jint n_threads
+    jlong mtmd_handle,
+    jbyteArray image_bytes
 ) {
-    if (clip_handle == 0 || image_bytes == nullptr) {
+    if (mtmd_handle == 0 || image_bytes == nullptr) {
         return 0;
     }
+
+    auto * mtmd_ctx = reinterpret_cast<mtmd_context *>(mtmd_handle);
 
     const jsize byte_count = env->GetArrayLength(image_bytes);
     if (byte_count <= 0) {
@@ -890,62 +899,59 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeClipEncodeImage(
         reinterpret_cast<jbyte *>(bytes.data())
     );
 
-    auto * embed = llava_image_embed_make_with_bytes(
-        reinterpret_cast<clip_ctx *>(clip_handle),
-        n_threads,
-        bytes.data(),
-        byte_count
-    );
+    mtmd_bitmap * bitmap = mtmd_helper_bitmap_init_from_buf(
+        mtmd_ctx, bytes.data(), static_cast<size_t>(byte_count));
+    if (bitmap == nullptr) {
+        return 0;
+    }
 
-    return reinterpret_cast<jlong>(embed);
+    mtmd_input_chunks * chunks = mtmd_input_chunks_init();
+    if (chunks == nullptr) {
+        mtmd_bitmap_free(bitmap);
+        return 0;
+    }
+
+    const char * marker = mtmd_default_marker();
+    mtmd_input_text input_text;
+    input_text.text = marker;
+    input_text.add_special = true;
+    input_text.parse_special = true;
+
+    const mtmd_bitmap * bitmap_ptr = bitmap;
+    const int32_t result = mtmd_tokenize(mtmd_ctx, chunks, &input_text, &bitmap_ptr, 1);
+    mtmd_bitmap_free(bitmap);
+
+    if (result != 0) {
+        mtmd_input_chunks_free(chunks);
+        return 0;
+    }
+
+    return reinterpret_cast<jlong>(chunks);
 }
 
-extern "C" JNIEXPORT jboolean JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipEvalImageEmbed(
-    JNIEnv * env,
+extern "C" JNIEXPORT jint JNICALL
+Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdGetTokenCount(
+    JNIEnv *,
     jclass,
-    jlong llama_handle,
-    jlong embed_handle,
-    jint batch_size,
-    jintArray n_past
+    jlong chunks_handle
 ) {
-    if (llama_handle == 0 || embed_handle == 0 || n_past == nullptr) {
-        return JNI_FALSE;
+    if (chunks_handle == 0) {
+        return 0;
     }
 
-    auto * state = reinterpret_cast<LlamaState *>(llama_handle);
-    if (state->context == nullptr) {
-        return JNI_FALSE;
-    }
-
-    if (env->GetArrayLength(n_past) <= 0) {
-        return JNI_FALSE;
-    }
-
-    jint current_n_past = 0;
-    env->GetIntArrayRegion(n_past, 0, 1, &current_n_past);
-
-    auto * embed = reinterpret_cast<llava_image_embed *>(embed_handle);
-    int native_n_past = static_cast<int>(current_n_past);
-    const bool ok = llava_eval_image_embed(state->context, embed, batch_size, &native_n_past);
-    if (!ok) {
-        return JNI_FALSE;
-    }
-
-    const jint updated_n_past = static_cast<jint>(native_n_past);
-    env->SetIntArrayRegion(n_past, 0, 1, &updated_n_past);
-    return JNI_TRUE;
+    auto * chunks = reinterpret_cast<mtmd_input_chunks *>(chunks_handle);
+    return static_cast<jint>(mtmd_helper_get_n_tokens(chunks));
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_io_t6x_dust_llm_LlamaJNI_nativeClipFreeEmbed(
+Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdFreeChunks(
     JNIEnv *,
     jclass,
-    jlong embed_handle
+    jlong chunks_handle
 ) {
-    if (embed_handle == 0) {
+    if (chunks_handle == 0) {
         return;
     }
 
-    llava_image_embed_free(reinterpret_cast<llava_image_embed *>(embed_handle));
+    mtmd_input_chunks_free(reinterpret_cast<mtmd_input_chunks *>(chunks_handle));
 }

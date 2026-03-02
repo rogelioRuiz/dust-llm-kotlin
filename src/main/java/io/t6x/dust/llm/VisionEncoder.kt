@@ -8,79 +8,64 @@ interface VisionEncoderEngine {
 
     fun encode(imageBytes: ByteArray): ImageEmbedding
 
-    fun evalImageEmbed(embedding: ImageEmbedding, llamaHandle: Long, batchSize: Int, nPast: IntArray)
-
     fun freeEmbedding(embedding: ImageEmbedding)
 
     fun close()
 }
 
 data class ImageEmbedding(
-    val nativeHandle: Long,
+    val chunksHandle: Long,
+    val mtmdCtxHandle: Long,
     val tokenCount: Int,
 )
 
-class VisionEncoder(mmprojPath: String) : VisionEncoderEngine, AutoCloseable {
-    private var clipHandle: Long
+class VisionEncoder(mmprojPath: String, llamaHandle: Long) : VisionEncoderEngine, AutoCloseable {
+    private var mtmdHandle: Long
 
     init {
         if (!File(mmprojPath).exists()) {
             throw DustCoreError.InferenceFailed("mmproj not found at $mmprojPath")
         }
 
-        clipHandle = LlamaJNI.nativeClipLoad(mmprojPath, 1)
-        if (clipHandle == 0L) {
-            throw DustCoreError.InferenceFailed("Failed to load CLIP model: $mmprojPath")
+        mtmdHandle = LlamaJNI.nativeMtmdLoad(mmprojPath, llamaHandle)
+        if (mtmdHandle == 0L) {
+            throw DustCoreError.InferenceFailed("Failed to load mtmd model: $mmprojPath")
         }
     }
 
     override val imageTokenCount: Int
-        get() = if (clipHandle == 0L) {
-            0
-        } else {
-            LlamaJNI.nativeClipImageTokenCount(clipHandle)
-        }
+        get() = 0  // With mtmd, token count is determined per-image during tokenization
 
     override fun encode(imageBytes: ByteArray): ImageEmbedding {
-        if (clipHandle == 0L) {
+        if (mtmdHandle == 0L) {
             throw LlamaError.ModelEvicted()
         }
 
-        val embedHandle = LlamaJNI.nativeClipEncodeImage(clipHandle, imageBytes, 4)
-        if (embedHandle == 0L) {
+        val chunksHandle = LlamaJNI.nativeMtmdEncodeImage(mtmdHandle, imageBytes)
+        if (chunksHandle == 0L) {
             throw DustCoreError.InferenceFailed("Failed to encode image")
         }
 
+        val tokenCount = LlamaJNI.nativeMtmdGetTokenCount(chunksHandle)
+
         return ImageEmbedding(
-            nativeHandle = embedHandle,
-            tokenCount = imageTokenCount,
+            chunksHandle = chunksHandle,
+            mtmdCtxHandle = mtmdHandle,
+            tokenCount = tokenCount,
         )
-    }
-
-    override fun evalImageEmbed(embedding: ImageEmbedding, llamaHandle: Long, batchSize: Int, nPast: IntArray) {
-        val ok = LlamaJNI.nativeClipEvalImageEmbed(
-            llamaHandle = llamaHandle,
-            embedHandle = embedding.nativeHandle,
-            batchSize = batchSize,
-            nPast = nPast,
-        )
-
-        if (!ok) {
-            throw DustCoreError.InferenceFailed("Failed to evaluate image embedding")
-        }
     }
 
     override fun freeEmbedding(embedding: ImageEmbedding) {
-        if (embedding.nativeHandle != 0L) {
-            LlamaJNI.nativeClipFreeEmbed(embedding.nativeHandle)
+        if (embedding.chunksHandle != 0L) {
+            LlamaJNI.nativeMtmdFreeChunks(embedding.chunksHandle)
         }
     }
 
     override fun close() {
-        val handle = clipHandle
+        val handle = mtmdHandle
         if (handle != 0L) {
-            clipHandle = 0L
-            LlamaJNI.nativeClipFree(handle)
+            mtmdHandle = 0L
+            LlamaJNI.nativeMtmdFree(handle)
         }
     }
 }
