@@ -14,6 +14,7 @@
   <a href="https://developer.android.com/studio/releases/platforms"><img alt="API" src="https://img.shields.io/badge/API-26+-green.svg"></a>
   <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.1-purple.svg"></a>
   <img alt="GGUF" src="https://img.shields.io/badge/GGUF-llama.cpp-blueviolet">
+  <a href="https://github.com/rogelioRuiz/dust-llm-kotlin/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rogelioRuiz/dust-llm-kotlin/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 </p>
 
 ---
