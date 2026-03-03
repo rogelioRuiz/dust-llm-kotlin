@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "llama.h"
+#include "ggml-backend.h"
 #include "mtmd.h"
 #include "mtmd-helper.h"
 
@@ -954,4 +955,14 @@ Java_io_t6x_dust_llm_LlamaJNI_nativeMtmdFreeChunks(
     }
 
     mtmd_input_chunks_free(reinterpret_cast<mtmd_input_chunks *>(chunks_handle));
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_t6x_dust_llm_LlamaJNI_nativeIsGpuAvailable(
+    JNIEnv *,
+    jclass
+) {
+    ensure_backend_init();
+    return ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU) != nullptr
+        ? JNI_TRUE : JNI_FALSE;
 }

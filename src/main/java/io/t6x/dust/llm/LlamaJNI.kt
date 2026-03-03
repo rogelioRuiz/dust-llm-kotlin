@@ -90,4 +90,6 @@ object LlamaJNI {
     external fun nativeMtmdGetTokenCount(chunksHandle: Long): Int
 
     external fun nativeMtmdFreeChunks(chunksHandle: Long)
+
+    external fun nativeIsGpuAvailable(): Boolean
 }

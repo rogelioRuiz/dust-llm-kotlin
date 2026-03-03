@@ -33,6 +33,16 @@ jobs:
             "platforms;android-36" "build-tools;36.0.0" \
             "ndk;27.0.12077973" 2>&1 | tail -10
 
+      - name: Install Vulkan build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ninja-build glslc
+          NDK=$ANDROID_SDK_ROOT/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/vulkan
+          VK_TAG=$(grep '#define VK_HEADER_VERSION ' "$NDK/vulkan_core.h" | awk '{print $3}')
+          curl -sL "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.3.$VK_TAG.tar.gz" | \
+            tar xz --strip-components=3 -C "$NDK" "Vulkan-Headers-1.3.$VK_TAG/include/vulkan/"
+          echo "$ANDROID_SDK_ROOT/ndk/27.0.12077973/shader-tools/linux-x86_64" >> "$GITHUB_PATH"
+
       - name: Import GPG key
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 -d > "${{ runner.temp }}/secring.gpg"
