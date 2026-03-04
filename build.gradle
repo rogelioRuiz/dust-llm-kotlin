@@ -67,7 +67,7 @@ allprojects {
 }
 
 dependencies {
-    implementation 'io.t6x.dust:dust-core-kotlin:0.1.0'
+    implementation 'io.t6x.dust:dust-core-kotlin:0.1.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
     testImplementation "junit:junit:$junitVersion"
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0'
