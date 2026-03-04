@@ -194,8 +194,9 @@ class LlamaSession(
     fun applyTemplate(
         messages: List<ChatMessage>,
         addGenerationPrompt: Boolean,
+        enableThinking: Boolean? = null,
     ): Pair<String, Int> {
-        val prompt = templateEngine.apply(messages, addGenerationPrompt)
+        val prompt = templateEngine.apply(messages, addGenerationPrompt, enableThinking = enableThinking)
         val tokens = tokenize(prompt, addSpecial = true)
         return prompt to tokens.size
     }
@@ -205,16 +206,17 @@ class LlamaSession(
         maxTokens: Int,
         stopSequences: List<String>,
         sampler: SamplerConfig,
+        enableThinking: Boolean? = null,
     ): Pair<GenerateResult, Int> {
         val current = activeEngine()
         var allMessages = lock.withLock { chatMessages.toList() } + messages
         allMessages = trimHistory(allMessages, maxTokens, current.nCtx)
 
-        val prompt = templateEngine.apply(allMessages, addGenerationPrompt = true)
+        val prompt = templateEngine.apply(allMessages, addGenerationPrompt = true, enableThinking = enableThinking)
         val result = generate(prompt, maxTokens, stopSequences, sampler)
 
         val updatedHistory = allMessages + ChatMessage(role = "assistant", content = result.text)
-        val fullPrompt = templateEngine.apply(updatedHistory, addGenerationPrompt = false)
+        val fullPrompt = templateEngine.apply(updatedHistory, addGenerationPrompt = false, enableThinking = enableThinking)
         val updatedContextUsed = countTokens(fullPrompt)
 
         lock.withLock {

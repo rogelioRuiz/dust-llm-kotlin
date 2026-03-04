@@ -12,6 +12,7 @@ class ChatTemplateEngine(templateString: String?) {
         addGenerationPrompt: Boolean,
         bosToken: String = "",
         eosToken: String = "",
+        enableThinking: Boolean? = null,
     ): String {
         val nodes = TemplateParser(template).parse()
         val rootContext = mutableMapOf<String, Any?>(
@@ -20,6 +21,9 @@ class ChatTemplateEngine(templateString: String?) {
             "bos_token" to bosToken,
             "eos_token" to eosToken,
         )
+        if (enableThinking != null) {
+            rootContext["enable_thinking"] = enableThinking
+        }
         return TemplateEvaluator(rootContext).render(nodes)
     }
 
