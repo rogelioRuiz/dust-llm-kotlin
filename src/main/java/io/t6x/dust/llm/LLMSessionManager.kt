@@ -5,6 +5,7 @@ import io.t6x.dust.core.ModelDescriptor
 import io.t6x.dust.core.ModelFormat
 import io.t6x.dust.core.ModelServer
 import io.t6x.dust.core.ModelSession
+import io.t6x.dust.core.ModelSessionFactory
 import io.t6x.dust.core.ModelStatus
 import io.t6x.dust.core.SessionPriority
 import java.io.File
@@ -21,7 +22,7 @@ class LLMSessionManager(
     private val visionEncoderFactory: (mmprojPath: String, llamaHandle: Long) -> VisionEncoderEngine = { mmprojPath, llamaHandle ->
         VisionEncoder(mmprojPath, llamaHandle)
     },
-) : ModelServer {
+) : ModelServer, ModelSessionFactory {
     private val lock = ReentrantLock()
     private val descriptors = mutableMapOf<String, ModelDescriptor>()
     private val statuses = mutableMapOf<String, ModelStatus>()
@@ -53,6 +54,10 @@ class LLMSessionManager(
         }
 
         return loadModelWithConfig(descriptor, config, priority)
+    }
+
+    override suspend fun makeSession(descriptor: ModelDescriptor, priority: SessionPriority): ModelSession {
+        return loadModel(descriptor, priority)
     }
 
     fun loadModelWithConfig(
