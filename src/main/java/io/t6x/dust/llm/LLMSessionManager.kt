@@ -229,7 +229,13 @@ class LLMSessionManager(
 
     private fun legacyDescriptor(path: String, modelId: String): ModelDescriptor {
         val file = File(path)
-        val sizeBytes = if (file.exists()) file.length() else 0L
+        val sizeBytes = if (file.isDirectory) {
+            file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+        } else if (file.exists()) {
+            file.length()
+        } else {
+            0L
+        }
 
         return ModelDescriptor(
             id = modelId,
@@ -249,6 +255,11 @@ class LLMSessionManager(
     ): LlamaSession {
         sessionFactory?.let { factory ->
             return factory(path, modelId, config, priority)
+        }
+
+        // MLX model directories cannot be loaded on Android (MLX is Apple-only)
+        if (File(path).isDirectory) {
+            throw DustCoreError.FormatUnsupported
         }
 
         val context = LlamaContextWrapper.load(path, config)
